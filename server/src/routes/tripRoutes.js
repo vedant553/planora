@@ -8,7 +8,8 @@ import {
     updateTrip,
     deleteTrip 
 } from '../controllers/tripController.js';
-
+import expenseRoutes from './expenseRoutes.js';
+  
 const router = express.Router();
 
 // Apply the 'protect' middleware to all routes in this file.
@@ -35,6 +36,12 @@ router.route('/:id')
 // POST /api/trips/:id/members
 router.route('/:id/members')
   .post(addMemberToTrip);
+
+// Use the expense router for nested routes
+// This line tells the trip router: "For any URL that matches '/:tripId',
+// pass the request on to the 'expenseRoutes' router to see if it has a match."
+// This is how you connect /api/trips/:tripId/expenses to the expense controller.
+router.use('/:tripId', expenseRoutes);
 
 export default router;
 
