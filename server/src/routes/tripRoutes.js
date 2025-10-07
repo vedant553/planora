@@ -9,6 +9,7 @@ import {
     deleteTrip 
 } from '../controllers/tripController.js';
 import expenseRoutes from './expenseRoutes.js';
+import itineraryRoutes from './itineraryRoutes.js';
   
 const router = express.Router();
 
@@ -42,6 +43,9 @@ router.route('/:id/members')
 // pass the request on to the 'expenseRoutes' router to see if it has a match."
 // This is how you connect /api/trips/:tripId/expenses to the expense controller.
 router.use('/:tripId', expenseRoutes);
+
+// Use the itinerary router for nested routes ---
+router.use('/:tripId', itineraryRoutes);
 
 export default router;
 
