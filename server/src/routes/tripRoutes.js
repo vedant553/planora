@@ -8,6 +8,7 @@ import {
     updateTrip,
     deleteTrip 
 } from '../controllers/tripController.js';
+import upload from '../config/cloudinary.js';
 import expenseRoutes from './expenseRoutes.js';
 import itineraryRoutes from './itineraryRoutes.js';
   
@@ -30,7 +31,7 @@ router.route('/')
 // DELETE /api/trips/:id
 router.route('/:id')
   .get(getTripById)
-  .put(updateTrip)
+  .put(upload.single('tripImage'), updateTrip) // Add upload middleware here
   .delete(deleteTrip);
   
 // Route for adding a member to a specific trip.

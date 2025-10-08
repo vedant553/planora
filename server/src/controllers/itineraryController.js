@@ -64,3 +64,4 @@ const getPolls = (req, res) => {
 
 export { addActivity, getActivities, createPoll, castVote, getPolls };
 
+    

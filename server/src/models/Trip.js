@@ -69,7 +69,11 @@ const tripSchema = new mongoose.Schema({
   settlements: [settlementSchema],
   // Add activities and polls to the trip ---
   activities: [activitySchema],
-  polls: [pollSchema]
+  polls: [pollSchema],
+  tripImage: {
+    type: String,
+    default: 'https://res.cloudinary.com/demo/image/upload/v1612281245/sample.jpg'
+  }
 }, {
   timestamps: true,
 });

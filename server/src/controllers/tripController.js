@@ -1,5 +1,6 @@
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
+import sendEmail from '../config/email.js';
 
 // --- Functions from before (create, get, add member) ---
 // (No changes to the existing functions)
@@ -95,8 +96,23 @@ const addMemberToTrip = async (req, res) => {
     }
 
     trip.members.push(newMember._id);
-    await trip.save();
     
+    await trip.save(); // This line already exists
+
+    // --- ADD THIS EMAIL LOGIC ---
+    const emailHtml = `
+        <h1>You've been invited!</h1>
+        <p>${req.user.name} has invited you to join the trip "${trip.name}" on Planora.</p>
+        <p>Log in to Planora to see the trip details.</p>
+    `;
+
+    await sendEmail({
+        to: newMember.email,
+        subject: `Invitation to join trip: ${trip.name}`,
+        html: emailHtml
+    });
+    // --- END OF EMAIL LOGIC ---
+
     const updatedTrip = await Trip.findById(req.params.id).populate('members', 'name email');
     res.json(updatedTrip);
 
@@ -130,6 +146,11 @@ const updateTrip = async (req, res) => {
     trip.destination = req.body.destination || trip.destination;
     if (req.body.startDate && req.body.endDate) {
         trip.dates = { start: req.body.startDate, end: req.body.endDate };
+    }
+
+    // Add this block of code before the try...catch block
+    if (req.file) {
+        trip.tripImage = req.file.path;
     }
 
     const updatedTrip = await trip.save();
