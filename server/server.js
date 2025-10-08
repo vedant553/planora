@@ -1,42 +1,71 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDB from './src/config/db.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
-// --- Import All Route Files ---
+import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import tripRoutes from './src/routes/tripRoutes.js';
 
-// Load environment variables from .env file
 dotenv.config();
-
-// Connect to the MongoDB database
 connectDB();
 
-// Initialize the Express application
 const app = express();
 
-// Middleware to parse incoming JSON requests
-app.use(express.json());
-
-// --- API Test Route ---
-// A simple route to check if the API is running
-app.get('/', (req, res) => {
-  res.send('API is running successfully...');
+// Create the HTTP server and the Socket.IO server
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // For development. In production, restrict this to your frontend URL.
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
 });
 
-// --- Mount All API Routes ---
-// Use the imported routers for specific base URL paths
+// Middleware to make the `io` instance accessible in all controllers
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
+// Main Socket.IO connection handler
+io.on('connection', (socket) => {
+    console.log(`Socket Connected: ${socket.id}`);
+
+    // Handler for when a user joins a specific trip's "room"
+    socket.on('joinTripRoom', (tripId) => {
+        socket.join(tripId);
+        console.log(`User ${socket.id} joined room for trip ${tripId}`);
+    });
+
+    // Handler for when a user leaves a room
+    socket.on('leaveTripRoom', (tripId) => {
+        socket.leave(tripId);
+        console.log(`User ${socket.id} left room for trip ${tripId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`Socket Disconnected: ${socket.id}`);
+    });
+});
+
+// Standard Express Middleware
+app.use(express.json());
+
+// Simple route for checking if the server is running
+app.get('/', (req, res) => {
+  res.send('API with real-time features is running...');
+});
+
+// Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/trips', tripRoutes);
 
-
-// Define the port for the server to listen on
 const PORT = process.env.PORT || 5000;
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start the server by listening on the httpServer instance
+httpServer.listen(PORT, () => {
+  console.log(`Server with real-time support running on port ${PORT}`);
 });
 
