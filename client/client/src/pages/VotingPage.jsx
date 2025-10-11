@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Container, Typography, Button, Box, Stack } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import PollCard from '../components/PollCard';
+import ProposePollModal from '../components/ProposePollModal';
 import { useTrip } from '../context/TripContext';
 
 const VotingPage = () => {
   const { polls, votePoll } = useTrip();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <Container maxWidth="lg">
@@ -12,7 +15,11 @@ const VotingPage = () => {
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Voting
         </Typography>
-        <Button variant="contained" startIcon={<AddCircleOutlinedIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddCircleOutlinedIcon />}
+          onClick={() => setIsModalOpen(true)}
+        >
           Propose a New Poll
         </Button>
       </Box>
@@ -32,11 +39,17 @@ const VotingPage = () => {
             variant="contained"
             startIcon={<AddCircleOutlinedIcon />}
             sx={{ mt: 2 }}
+            onClick={() => setIsModalOpen(true)}
           >
             Create First Poll
           </Button>
         </Box>
       )}
+
+      <ProposePollModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </Container>
   );
 };

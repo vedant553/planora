@@ -1,14 +1,23 @@
+import { useState } from 'react';
 import { Container, Typography, Button, Box, Stack } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import { useNavigate } from 'react-router-dom';
 import TripCard from '../components/TripCard';
+import CreateTripModal from '../components/CreateTripModal';
 import { mockTrips } from '../utils/mockData';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleTripClick = (tripId) => {
     navigate('/trip/itinerary');
+  };
+
+  const handleCreateTrip = (tripData) => {
+    console.log('Creating trip:', tripData);
+    // In a real app, this would call an API to create the trip
+    // For now, just log the data and close the modal
   };
 
   return (
@@ -21,6 +30,7 @@ const DashboardPage = () => {
           variant="contained"
           startIcon={<AddCircleOutlinedIcon />}
           size="large"
+          onClick={() => setIsModalOpen(true)}
         >
           Create New Trip
         </Button>
@@ -48,6 +58,12 @@ const DashboardPage = () => {
           </Typography>
         </Box>
       )}
+
+      <CreateTripModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreateTrip={handleCreateTrip}
+      />
     </Container>
   );
 };

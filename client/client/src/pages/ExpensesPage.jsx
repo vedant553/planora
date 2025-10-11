@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { Container, Typography, Button, Box, Card, CardContent, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import { useTrip } from '../context/TripContext';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import AddExpenseModal from '../components/AddExpenseModal';
+import SettleUpModal from '../components/SettleUpModal';
 
 const ExpensesPage = () => {
-  const { expenses, expenseSummary } = useTrip();
+  const { expenses, expenseSummary, currentTrip } = useTrip();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSettleUpModalOpen, setIsSettleUpModalOpen] = useState(false);
 
   return (
     <Container maxWidth="lg">
@@ -13,10 +18,14 @@ const ExpensesPage = () => {
           Expenses
         </Typography>
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined">
+          <Button variant="outlined" onClick={() => setIsSettleUpModalOpen(true)}>
             Settle Up
           </Button>
-          <Button variant="contained" startIcon={<AddCircleOutlinedIcon />}>
+          <Button
+            variant="contained"
+            startIcon={<AddCircleOutlinedIcon />}
+            onClick={() => setIsAddModalOpen(true)}
+          >
             Add New Expense
           </Button>
         </Stack>
@@ -134,11 +143,24 @@ const ExpensesPage = () => {
             variant="contained"
             startIcon={<AddCircleOutlinedIcon />}
             sx={{ mt: 2 }}
+            onClick={() => setIsAddModalOpen(true)}
           >
             Add First Expense
           </Button>
         </Box>
       )}
+
+      <AddExpenseModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
+
+      <SettleUpModal
+        open={isSettleUpModalOpen}
+        onClose={() => setIsSettleUpModalOpen(false)}
+        expenses={expenses}
+        members={currentTrip?.members || []}
+      />
     </Container>
   );
 };

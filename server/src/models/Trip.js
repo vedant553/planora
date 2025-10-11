@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-// --- Sub-schema for individual expenses ---
 const expenseSchema = new mongoose.Schema({
   description: { type: String, required: true },
   amount: { type: Number, required: true },
@@ -8,164 +7,62 @@ const expenseSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   splitDetails: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    owes: { type: Number, required: true }
-  }],
-}, { _id: true, timestamps: true }); // Enable IDs and timestamps for sub-documents
+    owes: { type: Number }
+  }]
+});
 
-// --- Sub-schema for settlement payments ---
 const settlementSchema = new mongoose.Schema({
   from: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   to: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
-}, { _id: true, timestamps: true });
-
-// --- Sub-schema for individual itinerary activities ---
-const activitySchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String },
-    location: { type: String },
-    dateTime: { type: Date, required: true },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-});
-
-// --- Sub-schema for voting polls ---
-const pollSchema = new mongoose.Schema({
-    question: { type: String, required: true }, // e.g., "Which museum should we visit?"
-    description: { type: String },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    votes: [{
-        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        voteType: { type: String, enum: ['upvote', 'downvote'], required: true }
-    }]
-});
-
-const tripSchema = new mongoose.Schema({
-  name: {
+  status: {
     type: String,
-    required: true,
-    trim: true,
-  },
-  destination: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  dates: {
-    start: { type: Date, required: true },
-    end: { type: Date, required: true },
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User',
-  },
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  // Add the expense and settlement arrays ---
-  expenses: [expenseSchema],
-  settlements: [settlementSchema],
-  // Add activities and polls to the trip ---
-  activities: [activitySchema],
-  polls: [pollSchema],
-  tripImage: {
-    type: String,
-    default: 'https://res.cloudinary.com/demo/image/upload/v1612281245/sample.jpg'
+    enum: ['pending', 'confirmed'],
+    default: 'pending',
   }
-}, {
-  timestamps: true,
 });
 
-const Trip = mongoose.model('Trip', tripSchema);
-
-export default Trip;
-
-
-
-
-
-/*
-// Can be done like this also
-
-import mongoose from 'mongoose';
-
-// --- NEW: Schema for individual itinerary activities ---
 const activitySchema = new mongoose.Schema({
     title: { type: String, required: true },
-    description: { type: String },
-    location: { type: String },
+    description: String,
+    location: String,
     dateTime: { type: Date, required: true },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });
 
-// --- NEW: Schema for voting polls ---
+const voteSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    voteType: { type: String, enum: ['upvote', 'downvote'] }
+});
+
 const pollSchema = new mongoose.Schema({
-    question: { type: String, required: true }, // e.g., "Which museum should we visit?"
-    description: { type: String },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    votes: [{
-        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        voteType: { type: String, enum: ['upvote', 'downvote'], required: true }
-    }]
+    question: { type: String, required: true },
+    description: String,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    votes: [voteSchema]
 });
 
 
-// --- Main Trip Schema ---
 const tripSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  destination: {
-    type: String,
-    required: true,
-    trim: true,
-  },
+  name: { type: String, required: true },
+  destination: { type: String, required: true },
+  tripImage: { type: String, default: 'https://res.cloudinary.com/demo/image/upload/v1612281245/sample.jpg' },
   dates: {
     start: { type: Date, required: true },
     end: { type: Date, required: true },
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User',
-  },
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
-  // --- Schemas from Phase 3 ---
-  expenses: [
-    new mongoose.Schema({
-        description: { type: String, required: true },
-        amount: { type: Number, required: true },
-        paidBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        splitDetails: [{
-            user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-            owes: { type: Number }
-        }]
-    }, { timestamps: true })
-  ],
-  settlements: [
-    new mongoose.Schema({
-        from: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        to: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        amount: { type: Number },
-    }, { timestamps: true })
-  ],
-  // --- NEW: Add activities and polls to the trip ---
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  expenses: [expenseSchema],
+  settlements: [settlementSchema], // This now uses the updated schema
   activities: [activitySchema],
   polls: [pollSchema]
-
 }, {
-  timestamps: true,
+  timestamps: true
 });
 
 const Trip = mongoose.model('Trip', tripSchema);
 
 export default Trip;
 
-*/

@@ -1,10 +1,24 @@
+import { useState } from 'react';
 import { Container, Typography, Button, Box, Stack } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import ActivityCard from '../components/ActivityCard';
+import AddActivityModal from '../components/AddActivityModal';
 import { useTrip } from '../context/TripContext';
 
 const ItineraryPage = () => {
   const { activities } = useTrip();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const handleOpenModal = (day = null) => {
+    setSelectedDay(day);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedDay(null);
+  };
 
   // Group activities by day
   const activitiesByDay = activities.reduce((acc, activity) => {
@@ -32,6 +46,7 @@ const ItineraryPage = () => {
                 variant="outlined"
                 startIcon={<AddCircleOutlinedIcon />}
                 size="small"
+                onClick={() => handleOpenModal(parseInt(day))}
               >
                 Add Activity
               </Button>
@@ -54,11 +69,18 @@ const ItineraryPage = () => {
             variant="contained"
             startIcon={<AddCircleOutlinedIcon />}
             sx={{ mt: 2 }}
+            onClick={() => handleOpenModal()}
           >
             Add First Activity
           </Button>
         </Box>
       )}
+
+      <AddActivityModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        selectedDay={selectedDay}
+      />
     </Container>
   );
 };

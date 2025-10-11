@@ -1,37 +1,36 @@
 import express from 'express';
-import { 
-    addExpense, 
-    getExpenses, 
-    getTripBalances, 
-    recordSettlement,
+import {
     findTripAndVerifyMember,
-    updateExpense, // new import
-    deleteExpense  // new import
+    addExpense,
+    getExpenses,
+    updateExpense,
+    deleteExpense,
+    getTripBalances,
+    recordSettlement,
+    confirmSettlement, // Import the new function
 } from '../controllers/expenseController.js';
 
-// mergeParams: true is essential for nested routers to access parent params (like :tripId)
 const router = express.Router({ mergeParams: true });
 
-// This middleware runs first for all routes in this file
+// This middleware runs for ALL routes in this file, ensuring the user is part of the trip.
 router.use(findTripAndVerifyMember);
 
-// Routes for creating and getting expenses
 router.route('/expenses')
     .post(addExpense)
     .get(getExpenses);
 
-// --- NEW: Routes for updating and deleting a specific expense ---
 router.route('/expenses/:expenseId')
     .put(updateExpense)
     .delete(deleteExpense);
 
-// Route for getting the trip's financial balances
 router.route('/balances')
     .get(getTripBalances);
 
-// Route for recording a settlement payment
 router.route('/settle')
     .post(recordSettlement);
+
+router.route('/settlements/:settlementId/confirm')
+    .put(confirmSettlement);
 
 export default router;
 
