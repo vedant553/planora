@@ -1,7 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AuthProvider } from './context/AuthContext';
 import { TripProvider } from './context/TripContext';
 import theme from './theme';
 import LandingPage from './pages/LandingPage';
@@ -16,31 +15,27 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <TripProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/trip/*" element={
-                <MainLayout>
-                  <Routes>
-                    <Route path="itinerary" element={<ItineraryPage />} />
-                    <Route path="expenses" element={<ExpensesPage />} />
-                    <Route path="voting" element={<VotingPage />} />
-                    <Route path="overview" element={<ItineraryPage />} />
-                    <Route path="documents" element={<ItineraryPage />} />
-                    <Route path="settings" element={<ItineraryPage />} />
-                    <Route path="*" element={<Navigate to="itinerary" replace />} />
-                  </Routes>
-                </MainLayout>
-              } />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </TripProvider>
-      </AuthProvider>
+      <TripProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/trip/*" element={
+            <MainLayout>
+              <Routes>
+                <Route path="itinerary" element={<ItineraryPage />} />
+                <Route path="expenses" element={<ExpensesPage />} />
+                <Route path="voting" element={<VotingPage />} />
+                <Route path="overview" element={<ItineraryPage />} />
+                <Route path="documents" element={<ItineraryPage />} />
+                <Route path="settings" element={<ItineraryPage />} />
+                <Route path="*" element={<Navigate to="itinerary" replace />} />
+              </Routes>
+            </MainLayout>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </TripProvider>
     </ThemeProvider>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, Tabs, Tab, TextField, Button, Typography, InputAdornment, IconButton, Box } from '@mui/material';
+import { Card, CardContent, Tabs, Tab, TextField, Button, Typography, InputAdornment, IconButton, Box, Alert } from '@mui/material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import AuthLayout from '../layouts/AuthLayout';
@@ -17,6 +17,8 @@ const LoginPage = () => {
     name: ''
   });
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,28 +50,40 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError('');
     
     if (!validateForm()) {
       return;
     }
 
+    setLoading(true);
+
     try {
       if (activeTab === 0) {
         await login(formData.email, formData.password);
       } else {
-        await signup(formData.email, formData.password, formData.name);
+        await signup(formData.name, formData.email, formData.password);
       }
       navigate('/dashboard');
     } catch (error) {
       console.error('Authentication error:', error);
+      setApiError(
+        error.message || 
+        (activeTab === 0 ? 'Login failed. Please check your credentials.' : 'Signup failed. Please try again.')
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
-    // Clear error for this field when user starts typing
+    // Clear errors when user starts typing
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
+    }
+    if (apiError) {
+      setApiError('');
     }
   };
 
@@ -96,6 +110,12 @@ const LoginPage = () => {
             <Tab label="Login" sx={{ flex: 1 }} />
             <Tab label="Sign Up" sx={{ flex: 1 }} />
           </Tabs>
+
+          {apiError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {apiError}
+            </Alert>
+          )}
 
           <Box component="form" onSubmit={handleSubmit}>
             {activeTab === 1 && (
@@ -152,10 +172,10 @@ const LoginPage = () => {
               fullWidth
               variant="contained"
               size="large"
-              disabled={!isFormValid()}
+              disabled={!isFormValid() || loading}
               sx={{ mb: 2 }}
             >
-              {activeTab === 0 ? 'Login' : 'Sign Up'}
+              {loading ? 'Please wait...' : (activeTab === 0 ? 'Login' : 'Sign Up')}
             </Button>
 
             {activeTab === 0 && (

@@ -1,5 +1,5 @@
-import { createContext, useContext, useState } from 'react';
-import { mockCurrentUser } from '../utils/mockData';
+import { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -12,36 +12,58 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(mockCurrentUser);
-  const [token, setToken] = useState('mock-token-123');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Initialize user state from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Error loading user from localStorage:', error);
+      localStorage.removeItem('user');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const login = async (email, password) => {
-    // Mock login - in real app, this would call an API
-    setUser(mockCurrentUser);
-    setToken('mock-token-123');
-    return { user: mockCurrentUser, token: 'mock-token-123' };
+    try {
+      const data = await authService.login(email, password);
+      setUser(data.user);
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const signup = async (email, password, name) => {
-    // Mock signup - in real app, this would call an API
-    const newUser = { ...mockCurrentUser, email, name };
-    setUser(newUser);
-    setToken('mock-token-123');
-    return { user: newUser, token: 'mock-token-123' };
+  const signup = async (name, email, password) => {
+    try {
+      const data = await authService.register(name, email, password);
+      setUser(data.user);
+      return data;
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    setToken(null);
   };
 
   const value = {
     user,
-    token,
     login,
     signup,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    loading
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
