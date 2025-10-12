@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,174 +12,216 @@ import {
   Box,
   Avatar,
   Stack,
-  Divider
+  Divider,
+  Chip
 } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { formatCurrency } from '../utils/formatters';
 
-const SettleUpModal = ({ open, onClose, expenses, members }) => {
-  const [paidSettlements, setPaidSettlements] = useState(new Set());
-
-  // Calculate who owes whom
-  const calculateSettlements = () => {
-    // Create a balance map for each member
-    const balances = {};
+const SettleUpModal = ({ open, onClose, tripData, currentUser, paymentPlan, onInitiatePayment, onConfirmPayment }) => {
+  // Calculate outstanding debts (not yet initiated)
+  const getOutstandingDebts = () => {
+    if (!paymentPlan || !tripData?.settlements) return paymentPlan || [];
     
-    // Initialize balances
-    members.forEach(member => {
-      balances[member.id] = 0;
+    const initiatedSettlements = new Set(
+      tripData.settlements.map(s => `${s.from._id || s.from.id}-${s.to._id || s.to.id}`)
+    );
+    
+    return paymentPlan.filter(debt => {
+      const debtKey = `${debt.from._id || debt.from.id}-${debt.to._id || debt.to.id}`;
+      return !initiatedSettlements.has(debtKey);
     });
+  };
 
-    // Calculate balances from expenses
-    expenses.forEach(expense => {
-      const splitAmount = expense.amount / expense.splitBetween.length;
-      
-      // The payer gets credited
-      balances[expense.paidBy.id] += expense.amount;
-      
-      // Each person in the split gets debited
-      expense.splitBetween.forEach(member => {
-        balances[member.id] -= splitAmount;
-      });
-    });
+  const outstandingDebts = getOutstandingDebts();
+  const settlements = tripData?.settlements || [];
 
-    // Create settlement transactions
-    const settlements = [];
-    const debtors = [];
-    const creditors = [];
-
-    // Separate debtors and creditors
-    Object.entries(balances).forEach(([memberId, balance]) => {
-      if (balance < -0.01) { // owes money
-        debtors.push({ 
-          member: members.find(m => m.id === memberId), 
-          amount: Math.abs(balance) 
-        });
-      } else if (balance > 0.01) { // is owed money
-        creditors.push({ 
-          member: members.find(m => m.id === memberId), 
-          amount: balance 
-        });
-      }
-    });
-
-    // Sort by amount (largest first) for optimal settlement
-    debtors.sort((a, b) => b.amount - a.amount);
-    creditors.sort((a, b) => b.amount - a.amount);
-
-    // Create settlements using greedy algorithm
-    let i = 0, j = 0;
-    while (i < debtors.length && j < creditors.length) {
-      const debtor = debtors[i];
-      const creditor = creditors[j];
-      const amount = Math.min(debtor.amount, creditor.amount);
-
-      if (amount > 0.01) {
-        settlements.push({
-          id: `${debtor.member.id}-${creditor.member.id}`,
-          from: debtor.member,
-          to: creditor.member,
-          amount: amount
-        });
-      }
-
-      debtor.amount -= amount;
-      creditor.amount -= amount;
-
-      if (debtor.amount < 0.01) i++;
-      if (creditor.amount < 0.01) j++;
+  const handleInitiatePayment = (debt) => {
+    if (onInitiatePayment) {
+      onInitiatePayment(debt);
     }
-
-    return settlements;
   };
 
-  const settlements = calculateSettlements();
-
-  const handleMarkAsPaid = (settlementId) => {
-    setPaidSettlements(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(settlementId)) {
-        newSet.delete(settlementId);
-      } else {
-        newSet.add(settlementId);
-      }
-      return newSet;
-    });
+  const handleConfirmPayment = (settlement) => {
+    if (onConfirmPayment) {
+      onConfirmPayment(settlement);
+    }
   };
 
-  const handleClose = () => {
-    setPaidSettlements(new Set());
-    onClose();
+  const isCurrentUserPayer = (debt) => {
+    const userId = currentUser?._id || currentUser?.id;
+    const fromId = debt.from._id || debt.from.id;
+    return userId === fromId;
+  };
+
+  const isCurrentUserPayee = (settlement) => {
+    const userId = currentUser?._id || currentUser?.id;
+    const toId = settlement.to._id || settlement.to.id;
+    return userId === toId;
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 600 }}>Settle Up Payments</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Here is the simplest way to settle all debts for the trip.
-        </Typography>
+        {/* Section 1: Outstanding Debts */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Outstanding Debts
+          </Typography>
+          
+          {outstandingDebts.length > 0 ? (
+            <List sx={{ bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              {outstandingDebts.map((debt, index) => {
+                const isPayer = isCurrentUserPayer(debt);
+                const fromName = debt.from.name;
+                const toName = debt.to.name;
+                const displayText = isPayer 
+                  ? `You owe ${toName} ${formatCurrency(debt.amount)}`
+                  : `${fromName} owes ${toName} ${formatCurrency(debt.amount)}`;
 
-        {settlements.length > 0 ? (
-          <List sx={{ bgcolor: 'background.paper' }}>
-            {settlements.map((settlement, index) => {
-              const isPaid = paidSettlements.has(settlement.id);
-              
-              return (
-                <Box key={settlement.id}>
-                  {index > 0 && <Divider />}
-                  <ListItem
-                    sx={{
-                      py: 2,
-                      opacity: isPaid ? 0.6 : 1,
-                      textDecoration: isPaid ? 'line-through' : 'none'
-                    }}
-                  >
-                    <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
-                      <Avatar src={settlement.from.avatar} sx={{ width: 40, height: 40 }} />
-                      <Box sx={{ flex: 1 }}>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body1">
-                              <strong>{settlement.from.name}</strong> needs to pay{' '}
-                              <strong>{settlement.to.name}</strong>
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="h6" color="primary" sx={{ fontWeight: 600, mt: 0.5 }}>
-                              {formatCurrency(settlement.amount)}
-                            </Typography>
-                          }
-                        />
-                      </Box>
-                      <Avatar src={settlement.to.avatar} sx={{ width: 40, height: 40 }} />
-                    </Stack>
-                    <ListItemSecondaryAction>
-                      <Button
-                        variant={isPaid ? 'outlined' : 'contained'}
-                        size="small"
-                        startIcon={isPaid ? <CheckCircleOutlineIcon /> : null}
-                        onClick={() => handleMarkAsPaid(settlement.id)}
-                        color={isPaid ? 'success' : 'primary'}
-                      >
-                        {isPaid ? 'Paid' : 'Mark as Paid'}
-                      </Button>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                </Box>
-              );
-            })}
-          </List>
-        ) : (
+                return (
+                  <Box key={`${debt.from.id}-${debt.to.id}-${index}`}>
+                    {index > 0 && <Divider />}
+                    <ListItem sx={{ py: 2 }}>
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
+                        <Avatar src={debt.from.avatar} sx={{ width: 40, height: 40 }} />
+                        <Box sx={{ flex: 1 }}>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body1">
+                                {displayText}
+                              </Typography>
+                            }
+                          />
+                        </Box>
+                        <Avatar src={debt.to.avatar} sx={{ width: 40, height: 40 }} />
+                      </Stack>
+                      {isPayer && (
+                        <ListItemSecondaryAction>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleInitiatePayment(debt)}
+                          >
+                            I Have Paid
+                          </Button>
+                        </ListItemSecondaryAction>
+                      )}
+                    </ListItem>
+                  </Box>
+                );
+              })}
+            </List>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 3, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                No outstanding debts
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Section 2: Pending & Confirmed Settlements */}
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Pending & Confirmed Settlements
+          </Typography>
+          
+          {settlements.length > 0 ? (
+            <List sx={{ bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+              {settlements.map((settlement, index) => {
+                const isPayer = isCurrentUserPayer(settlement);
+                const isPayee = isCurrentUserPayee(settlement);
+                const fromName = settlement.from.name;
+                const toName = settlement.to.name;
+                const displayText = isPayer
+                  ? `You paid ${toName} ${formatCurrency(settlement.amount)}`
+                  : isPayee
+                  ? `${fromName} paid you ${formatCurrency(settlement.amount)}`
+                  : `${fromName} paid ${toName} ${formatCurrency(settlement.amount)}`;
+
+                return (
+                  <Box key={settlement._id || settlement.id || index}>
+                    {index > 0 && <Divider />}
+                    <ListItem sx={{ py: 2 }}>
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
+                        <Avatar src={settlement.from.avatar} sx={{ width: 40, height: 40 }} />
+                        <Box sx={{ flex: 1 }}>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body1">
+                                {displayText}
+                              </Typography>
+                            }
+                          />
+                        </Box>
+                        <Avatar src={settlement.to.avatar} sx={{ width: 40, height: 40 }} />
+                      </Stack>
+                      <ListItemSecondaryAction>
+                        {settlement.status === 'pending' && (
+                          <>
+                            {isPayer && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                disabled
+                              >
+                                Awaiting Confirmation
+                              </Button>
+                            )}
+                            {isPayee && (
+                              <Button
+                                variant="contained"
+                                size="small"
+                                color="success"
+                                onClick={() => handleConfirmPayment(settlement)}
+                              >
+                                Confirm Payment
+                              </Button>
+                            )}
+                            {!isPayer && !isPayee && (
+                              <Chip
+                                label="Pending"
+                                size="small"
+                                color="warning"
+                              />
+                            )}
+                          </>
+                        )}
+                        {settlement.status === 'confirmed' && (
+                          <Chip
+                            icon={<CheckCircleIcon />}
+                            label="Settled"
+                            size="small"
+                            color="success"
+                          />
+                        )}
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  </Box>
+                );
+              })}
+            </List>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 3, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                No pending or confirmed settlements
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {outstandingDebts.length === 0 && settlements.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="h6" color="text.secondary">
               All expenses are settled! 🎉
             </Typography>
           </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose} variant="contained">
+        <Button onClick={onClose} variant="contained">
           Close
         </Button>
       </DialogActions>

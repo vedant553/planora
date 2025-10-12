@@ -12,7 +12,10 @@ export const useTrip = () => {
 };
 
 export const TripProvider = ({ children }) => {
-  const [currentTrip, setCurrentTrip] = useState(mockCurrentTrip);
+  const [currentTrip, setCurrentTrip] = useState({
+    ...mockCurrentTrip,
+    settlements: [] // Initialize settlements array
+  });
   const [activities, setActivities] = useState(mockActivities);
   const [expenses, setExpenses] = useState(mockExpenses);
   const [polls, setPolls] = useState(mockPolls);
@@ -41,6 +44,33 @@ export const TripProvider = ({ children }) => {
     }));
   };
 
+  const initiateSettlement = (debt) => {
+    const newSettlement = {
+      id: Date.now().toString(),
+      from: debt.from,
+      to: debt.to,
+      amount: debt.amount,
+      status: 'pending',
+      initiatedAt: new Date().toISOString()
+    };
+
+    setCurrentTrip(prev => ({
+      ...prev,
+      settlements: [...(prev.settlements || []), newSettlement]
+    }));
+  };
+
+  const confirmSettlement = (settlement) => {
+    setCurrentTrip(prev => ({
+      ...prev,
+      settlements: prev.settlements.map(s => 
+        s.id === settlement.id 
+          ? { ...s, status: 'confirmed', confirmedAt: new Date().toISOString() }
+          : s
+      )
+    }));
+  };
+
   const value = {
     currentTrip,
     setCurrentTrip,
@@ -51,7 +81,9 @@ export const TripProvider = ({ children }) => {
     expenseSummary,
     polls,
     addPoll,
-    votePoll
+    votePoll,
+    initiateSettlement,
+    confirmSettlement
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

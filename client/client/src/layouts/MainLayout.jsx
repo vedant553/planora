@@ -3,39 +3,52 @@ import TripSidebar from '../components/TripSidebar';
 import { useTrip } from '../context/TripContext';
 import { useState } from 'react';
 
-const DRAWER_WIDTH = 280;
+const DRAWER_WIDTH_EXPANDED = 280;
+const DRAWER_WIDTH_COLLAPSED = 72;
 
 const MainLayout = ({ children }) => {
   const { currentTrip } = useTrip();
   const [currentPage, setCurrentPage] = useState('itinerary');
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-            borderRight: '1px solid',
-            borderColor: 'divider'
-          }
-        }}
+      <Box
+        onMouseEnter={() => setSidebarExpanded(true)}
+        onMouseLeave={() => setSidebarExpanded(false)}
       >
-        <TripSidebar 
-          trip={currentTrip} 
-          currentPage={currentPage}
-          onNavigate={setCurrentPage}
-        />
-      </Drawer>
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: sidebarExpanded ? DRAWER_WIDTH_EXPANDED : DRAWER_WIDTH_COLLAPSED,
+            flexShrink: 0,
+            transition: 'width 0.3s ease',
+            '& .MuiDrawer-paper': {
+              width: sidebarExpanded ? DRAWER_WIDTH_EXPANDED : DRAWER_WIDTH_COLLAPSED,
+              boxSizing: 'border-box',
+              borderRight: '1px solid',
+              borderColor: 'divider',
+              transition: 'width 0.3s ease',
+              overflowX: 'hidden'
+            }
+          }}
+        >
+          <TripSidebar 
+            trip={currentTrip} 
+            currentPage={currentPage}
+            onNavigate={setCurrentPage}
+            isExpanded={sidebarExpanded}
+          />
+        </Drawer>
+      </Box>
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           bgcolor: 'background.default',
-          p: 3
+          p: 3,
+          marginLeft: 0,
+          transition: 'margin-left 0.3s ease'
         }}
       >
         {children}
