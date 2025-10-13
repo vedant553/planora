@@ -2,9 +2,26 @@ import { Card, CardContent, Typography, Stack, IconButton, Box } from '@mui/mate
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
 
-const PollCard = ({ poll, onVote }) => {
-  const handleVote = (vote) => {
-    onVote(poll.id, vote);
+import { useAuth } from '../context/AuthContext';
+import { useTrip } from '../context/TripContext';
+
+const PollCard = ({ poll }) => {
+  const { castVote } = useTrip();
+  const { user } = useAuth();
+
+  // Calculate vote counts
+  const upvotes = poll.votes?.filter(v => v.type === 'upvote').length || 0;
+  const downvotes = poll.votes?.filter(v => v.type === 'downvote').length || 0;
+  
+  // Check if the current user has voted
+  const userVote = poll.votes?.find(v => v.userId === user._id)?.type || 'none';
+
+  const handleVote = async (voteType) => {
+    try {
+      await castVote(poll._id, { voteType });
+    } catch (err) {
+      console.error('Failed to cast vote:', err);
+    }
   };
 
   return (
@@ -27,41 +44,41 @@ const PollCard = ({ poll, onVote }) => {
         <Stack direction="row" spacing={3} alignItems="center">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
-              onClick={() => handleVote('up')}
-              color={poll.userVote === 'up' ? 'primary' : 'default'}
+              onClick={() => handleVote('upvote')}
+              color={userVote === 'upvote' ? 'primary' : 'default'}
               sx={{
-                bgcolor: poll.userVote === 'up' ? 'primary.light' : 'transparent',
+                bgcolor: userVote === 'upvote' ? 'primary.light' : 'transparent',
                 '&:hover': {
-                  bgcolor: poll.userVote === 'up' ? 'primary.light' : 'action.hover'
+                  bgcolor: userVote === 'upvote' ? 'primary.light' : 'action.hover'
                 }
               }}
             >
               <ThumbUpOutlinedIcon />
             </IconButton>
             <Typography variant="body1" sx={{ fontWeight: 600, minWidth: 24, textAlign: 'center' }}>
-              {poll.upvotes}
+              {upvotes}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <IconButton
-              onClick={() => handleVote('down')}
-              color={poll.userVote === 'down' ? 'error' : 'default'}
+              onClick={() => handleVote('downvote')}
+              color={userVote === 'downvote' ? 'error' : 'default'}
               sx={{
-                bgcolor: poll.userVote === 'down' ? 'error.light' : 'transparent',
+                bgcolor: userVote === 'downvote' ? 'error.light' : 'transparent',
                 '&:hover': {
-                  bgcolor: poll.userVote === 'down' ? 'error.light' : 'action.hover'
+                  bgcolor: userVote === 'downvote' ? 'error.light' : 'action.hover'
                 }
               }}
             >
               <ThumbDownAltOutlinedIcon />
             </IconButton>
             <Typography variant="body1" sx={{ fontWeight: 600, minWidth: 24, textAlign: 'center' }}>
-              {poll.downvotes}
+              {downvotes}
             </Typography>
           </Box>
-          {poll.userVote !== 'none' && (
+          {userVote !== 'none' && (
             <Typography variant="caption" color="primary" sx={{ ml: 'auto' }}>
-              You voted
+              You voted {userVote === 'upvote' ? 'yes' : 'no'}
             </Typography>
           )}
         </Stack>

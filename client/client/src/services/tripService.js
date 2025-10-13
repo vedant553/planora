@@ -247,6 +247,64 @@ const tripService = {
         throw error;
       }
     }
+  },
+
+  proposePoll: async (tripId, pollData) => {
+    try {
+      const userJSON = localStorage.getItem('user');
+      
+      if (!userJSON) {
+        throw new Error('No user found. Please login again.');
+      }
+      
+      const user = JSON.parse(userJSON);
+      
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+      };
+      
+      const response = await axios.post(`${API_BASE_URL}/trips/${tripId}/polls`, pollData, config);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data.message || error.response.data.error || 'Failed to create poll');
+      } else if (error.request) {
+        throw new Error('Network Error: Unable to connect to server. Please check if the backend is running.');
+      } else {
+        throw error;
+      }
+    }
+  },
+
+  castVote: async (tripId, pollId, voteData) => {
+    try {
+      const userJSON = localStorage.getItem('user');
+      
+      if (!userJSON) {
+        throw new Error('No user found. Please login again.');
+      }
+      
+      const user = JSON.parse(userJSON);
+      
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+      };
+      
+      const response = await axios.put(`${API_BASE_URL}/trips/${tripId}/polls/${pollId}/vote`, voteData, config);
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data.message || error.response.data.error || 'Failed to cast vote');
+      } else if (error.request) {
+        throw new Error('Network Error: Unable to connect to server. Please check if the backend is running.');
+      } else {
+        throw error;
+      }
+    }
   }
 };
 

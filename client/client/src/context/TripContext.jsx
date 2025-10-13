@@ -11,6 +11,8 @@ export const useTrip = () => {
   return context;
 };
 
+export default TripContext;
+
 export const TripProvider = ({ children }) => {
   const [currentTrip, setCurrentTrip] = useState({
     _id: null,
@@ -96,26 +98,45 @@ export const TripProvider = ({ children }) => {
     }
   };
 
-  const addPoll = (poll) => {
-    const newPoll = { ...poll, id: Date.now().toString() };
-    setPolls([...polls, newPoll]);
-    
-    // Also update currentTrip.polls to keep them in sync
-    setCurrentTrip(prev => ({
-      ...prev,
-      polls: [...(prev.polls || []), newPoll]
-    }));
+  const proposePoll = async (pollData) => {
+    if (!currentTrip?._id) {
+      throw new Error('No trip selected');
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const updatedTrip = await tripService.proposePoll(currentTrip._id, pollData);
+      console.log('proposePoll response:', updatedTrip);
+      setCurrentTrip(updatedTrip);
+      setPolls(updatedTrip.polls || []);
+      return updatedTrip;
+    } catch (err) {
+      setError(err.message || 'Failed to propose poll');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const votePoll = (pollId, vote) => {
-    setPolls(polls.map(poll => {
-      if (poll.id === pollId) {
-        const newUpvotes = vote === 'up' ? poll.upvotes + 1 : poll.upvotes;
-        const newDownvotes = vote === 'down' ? poll.downvotes + 1 : poll.downvotes;
-        return { ...poll, upvotes: newUpvotes, downvotes: newDownvotes, userVote: vote };
-      }
-      return poll;
-    }));
+  const castVote = async (pollId, voteData) => {
+    if (!currentTrip?._id) {
+      throw new Error('No trip selected');
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const updatedTrip = await tripService.castVote(currentTrip._id, pollId, voteData);
+      setCurrentTrip(updatedTrip);
+      setPolls(updatedTrip.polls || []);
+      return updatedTrip;
+    } catch (err) {
+      setError(err.message || 'Failed to cast vote');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const initiateSettlement = (debt) => {
@@ -219,8 +240,8 @@ export const TripProvider = ({ children }) => {
     addExpense,
     expenseSummary,
     polls,
-    addPoll,
-    votePoll,
+    proposePoll,
+    castVote,
     initiateSettlement,
     confirmSettlement,
     loading,

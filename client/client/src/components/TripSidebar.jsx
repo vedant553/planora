@@ -52,7 +52,7 @@ const TripSidebar = ({ trip, isExpanded }) => {
         ) : (
           <Tooltip title={`${trip.name} - ${trip.destination}`} placement="right">
             <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-              {trip.name.charAt(0)}
+              {trip.name ? trip.name.charAt(0) : '?'}
             </Avatar>
           </Tooltip>
         )}
