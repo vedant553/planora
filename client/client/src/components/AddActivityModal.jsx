@@ -61,11 +61,13 @@ const AddActivityModal = ({ open, onClose, selectedDay }) => {
       return selectedDay;
     }
 
-    if (!formData.dateTime || !currentTrip.startDate) {
+    const tripStartDate = currentTrip?.startDate || currentTrip?.dates?.start;
+    
+    if (!formData.dateTime || !tripStartDate) {
       return 1;
     }
 
-    const tripStart = new Date(currentTrip.startDate);
+    const tripStart = new Date(tripStartDate);
     const activityDate = new Date(formData.dateTime);
     const diffTime = activityDate - tripStart;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -73,20 +75,25 @@ const AddActivityModal = ({ open, onClose, selectedDay }) => {
     return Math.max(1, diffDays + 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       const activityData = {
-        tripId: currentTrip.id,
+        tripId: currentTrip._id || currentTrip.id,
         title: formData.title,
         description: formData.description,
         location: formData.location,
-        time: formData.dateTime.toISOString(),
+        dateTime: formData.dateTime.toISOString(),
         day: calculateDay(),
         type: 'activity' // Default type
       };
 
-      addActivity(activityData);
-      handleClose();
+      try {
+        await addActivity(activityData);
+        handleClose();
+      } catch (error) {
+        console.error('Failed to add activity:', error);
+        // You could set an error state here and display it to the user
+      }
     }
   };
 

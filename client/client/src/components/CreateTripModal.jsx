@@ -67,8 +67,13 @@ const CreateTripModal = ({ open, onClose, onCreateTrip }) => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      onCreateTrip(formData);
-      handleClose();
+      try {
+        onCreateTrip(formData);
+        // Don't close the modal here - let the parent component close it after successful creation
+      } catch (error) {
+        console.error('Error in CreateTripModal handleSubmit:', error);
+        // You could set an error state here to display to the user
+      }
     }
   };
 

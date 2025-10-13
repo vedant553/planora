@@ -40,10 +40,10 @@ const AddExpenseModal = ({ open, onClose }) => {
   // Initialize selected members when modal opens
   useEffect(() => {
     if (open && members.length > 0) {
-      setSelectedMembers(members.map(m => m.id));
+      setSelectedMembers(members.map(m => m._id || m.id));
       setFormData(prev => ({
         ...prev,
-        paidBy: members[0]?.id || ''
+        paidBy: members[0]?._id || members[0]?.id || ''
       }));
     }
   }, [open, members]);
@@ -126,23 +126,50 @@ const AddExpenseModal = ({ open, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      const paidByMember = members.find(m => m.id === formData.paidBy);
-      const splitBetweenMembers = members.filter(m => selectedMembers.includes(m.id));
+      try {
+        const paidByMember = members.find(m => (m._id || m.id) === formData.paidBy);
+        const splitBetweenMembers = members.filter(m => selectedMembers.includes(m._id || m.id));
 
-      const expenseData = {
-        tripId: currentTrip.id,
-        description: formData.description,
-        amount: parseFloat(formData.amount),
-        paidBy: paidByMember,
-        splitBetween: splitBetweenMembers,
-        date: new Date().toISOString().split('T')[0],
-        status: 'pending'
-      };
+        // Construct splitDetails array based on split method
+        let splitDetails = [];
+        
+        if (formData.splitMethod === 'equal') {
+          const equalAmount = parseFloat(formData.amount) / selectedMembers.length;
+          splitDetails = selectedMembers.map(memberId => {
+            const member = members.find(m => (m._id || m.id) === memberId);
+            return {
+              user: member._id || member.id,
+              owes: equalAmount
+            };
+          });
+        } else {
+          // Unequal split
+          splitDetails = selectedMembers.map(memberId => {
+            const member = members.find(m => (m._id || m.id) === memberId);
+            return {
+              user: member._id || member.id,
+              owes: parseFloat(customSplits[memberId]) || 0
+            };
+          });
+        }
 
-      addExpense(expenseData);
-      handleClose();
+        const expenseData = {
+          description: formData.description,
+          amount: parseFloat(formData.amount),
+          paidBy: paidByMember._id || paidByMember.id,
+          splitDetails: splitDetails,
+          date: new Date().toISOString().split('T')[0],
+          status: 'pending'
+        };
+
+        await addExpense(expenseData);
+        handleClose();
+      } catch (error) {
+        console.error('Error adding expense:', error);
+        setErrors({ submit: error.message || 'Failed to add expense' });
+      }
     }
   };
 
@@ -150,10 +177,10 @@ const AddExpenseModal = ({ open, onClose }) => {
     setFormData({
       description: '',
       amount: '',
-      paidBy: members[0]?.id || '',
+      paidBy: members[0]?._id || members[0]?.id || '',
       splitMethod: 'equal'
     });
-    setSelectedMembers(members.map(m => m.id));
+    setSelectedMembers(members.map(m => m._id || m.id));
     setCustomSplits({});
     setErrors({});
     onClose();
@@ -218,7 +245,7 @@ const AddExpenseModal = ({ open, onClose }) => {
               label="Paid By"
             >
               {members.map((member) => (
-                <MenuItem key={member.id} value={member.id}>
+                <MenuItem key={member._id || member.id} value={member._id || member.id}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Avatar src={member.avatar} sx={{ width: 24, height: 24 }} />
                     <Typography>{member.name}</Typography>
@@ -259,12 +286,13 @@ const AddExpenseModal = ({ open, onClose }) => {
             </Typography>
             <Stack spacing={1.5}>
               {members.map((member) => {
-                const isSelected = selectedMembers.includes(member.id);
+                const memberId = member._id || member.id;
+                const isSelected = selectedMembers.includes(memberId);
                 const equalAmount = calculateEqualSplit();
 
                 return (
                   <Box
-                    key={member.id}
+                    key={memberId}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
@@ -279,7 +307,7 @@ const AddExpenseModal = ({ open, onClose }) => {
                     <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
                       <Checkbox
                         checked={isSelected}
-                        onChange={() => handleMemberToggle(member.id)}
+                        onChange={() => handleMemberToggle(memberId)}
                       />
                       <Avatar src={member.avatar} sx={{ width: 32, height: 32 }} />
                       <Typography variant="body2">{member.name}</Typography>
@@ -295,8 +323,8 @@ const AddExpenseModal = ({ open, onClose }) => {
                           <TextField
                             size="small"
                             type="number"
-                            value={customSplits[member.id] || ''}
-                            onChange={handleCustomSplitChange(member.id)}
+                            value={customSplits[memberId] || ''}
+                            onChange={handleCustomSplitChange(memberId)}
                             InputProps={{
                               startAdornment: <InputAdornment position="start">$</InputAdornment>
                             }}
@@ -316,6 +344,11 @@ const AddExpenseModal = ({ open, onClose }) => {
             {errors.split && (
               <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
                 {errors.split}
+              </Typography>
+            )}
+            {errors.submit && (
+              <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                {errors.submit}
               </Typography>
             )}
           </Box>

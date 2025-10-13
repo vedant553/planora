@@ -1,27 +1,35 @@
-import { Box, Typography, List, ListItemButton, ListItemIcon, ListItemText, Avatar, Stack, Divider, Collapse, Tooltip } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Typography, List, ListItemButton, ListItemIcon, ListItemText, Avatar, Stack, Divider, Collapse, Tooltip, IconButton } from '@mui/material';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import DateRangeOutlinedIcon from '@mui/icons-material/DateRangeOutlined';
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
+import InviteMemberModal from './InviteMemberModal';
 
 const menuItems = [
-  { id: 'overview', label: 'Overview', icon: DashboardOutlinedIcon, path: '/trip/overview' },
-  { id: 'itinerary', label: 'Itinerary', icon: DateRangeOutlinedIcon, path: '/trip/itinerary' },
-  { id: 'expenses', label: 'Expenses', icon: PaidOutlinedIcon, path: '/trip/expenses' },
-  { id: 'voting', label: 'Voting', icon: ThumbUpOutlinedIcon, path: '/trip/voting' },
-  { id: 'documents', label: 'Documents', icon: FolderOpenOutlinedIcon, path: '/trip/documents' },
-  { id: 'settings', label: 'Settings', icon: SettingsOutlinedIcon, path: '/trip/settings' }
+  { id: 'overview', label: 'Overview', icon: DashboardOutlinedIcon },
+  { id: 'itinerary', label: 'Itinerary', icon: DateRangeOutlinedIcon },
+  { id: 'expenses', label: 'Expenses', icon: PaidOutlinedIcon },
+  { id: 'voting', label: 'Voting', icon: ThumbUpOutlinedIcon },
+  { id: 'documents', label: 'Documents', icon: FolderOpenOutlinedIcon },
+  { id: 'settings', label: 'Settings', icon: SettingsOutlinedIcon }
 ];
 
-const TripSidebar = ({ trip, currentPage, onNavigate, isExpanded }) => {
+const TripSidebar = ({ trip, isExpanded }) => {
   const navigate = useNavigate();
+  const { tripId } = useParams();
+  const location = useLocation();
+  const [isInviteModalOpen, setInviteModalOpen] = useState(false);
+
+  // Determine current page from URL
+  const currentPage = location.pathname.split('/').pop() || 'itinerary';
 
   const handleNavigation = (item) => {
-    onNavigate(item.id);
-    navigate(item.path);
+    navigate(`/trips/${tripId}/${item.id}`);
   };
 
   return (
@@ -112,12 +120,21 @@ const TripSidebar = ({ trip, currentPage, onNavigate, isExpanded }) => {
         {isExpanded ? (
           <Collapse in={isExpanded} orientation="horizontal" timeout={300}>
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                Members
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Members
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setInviteModalOpen(true)}
+                  sx={{ ml: 1 }}
+                >
+                  <PersonAddOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Box>
               <Stack spacing={1.5}>
-                {trip.members.map((member) => (
-                  <Stack key={member.id} direction="row" spacing={1.5} alignItems="center">
+                {trip.members?.map((member) => (
+                  <Stack key={member.id || member._id} direction="row" spacing={1.5} alignItems="center">
                     <Avatar src={member.avatar} alt={member.name} sx={{ width: 32, height: 32 }} />
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
@@ -131,14 +148,20 @@ const TripSidebar = ({ trip, currentPage, onNavigate, isExpanded }) => {
           </Collapse>
         ) : (
           <Stack spacing={1} alignItems="center">
-            {trip.members.map((member) => (
-              <Tooltip key={member.id} title={member.name} placement="right">
+            {trip.members?.map((member) => (
+              <Tooltip key={member.id || member._id} title={member.name} placement="right">
                 <Avatar src={member.avatar} alt={member.name} sx={{ width: 32, height: 32 }} />
               </Tooltip>
             ))}
           </Stack>
         )}
       </Box>
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        open={isInviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+      />
     </Box>
   );
 };

@@ -1,10 +1,10 @@
-// server/src/config/email.js
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransporter({
+// THE FIX: Changed createTransporter to createTransport
+const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
   auth: {
@@ -28,3 +28,4 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 export default sendEmail;
+    

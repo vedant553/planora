@@ -12,9 +12,9 @@ const authService = {
         password
       });
       
-      if (response.data.user) {
+      if (response.data) {
         // Store user object (including token) in localStorage
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(response.data));
       }
       
       return response.data;
@@ -31,9 +31,9 @@ const authService = {
         password
       });
       
-      if (response.data.user) {
+      if (response.data) {
         // Store user object (including token) in localStorage
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(response.data));
       }
       
       return response.data;

@@ -28,6 +28,7 @@ const activitySchema = new mongoose.Schema({
     description: String,
     location: String,
     dateTime: { type: Date, required: true },
+    day: { type: Number, default: 1 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });
 

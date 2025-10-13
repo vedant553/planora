@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { Container, Typography, Button, Box, Stack } from '@mui/material';
+import { Container, Typography, Button, Box, Stack, CircularProgress } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import ActivityCard from '../components/ActivityCard';
 import AddActivityModal from '../components/AddActivityModal';
 import { useTrip } from '../context/TripContext';
 
 const ItineraryPage = () => {
-  const { activities } = useTrip();
+  const { currentTrip, loading } = useTrip();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
+
+  // Get activities from currentTrip if available, otherwise use empty array
+  const activities = currentTrip?.activities || [];
 
   const handleOpenModal = (day = null) => {
     setSelectedDay(day);
@@ -19,6 +22,22 @@ const ItineraryPage = () => {
     setIsModalOpen(false);
     setSelectedDay(null);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   // Group activities by day
   const activitiesByDay = activities.reduce((acc, activity) => {
@@ -52,8 +71,8 @@ const ItineraryPage = () => {
               </Button>
             </Box>
             <Stack spacing={2}>
-              {dayActivities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
+              {dayActivities.map((activity, idx) => (
+                <ActivityCard key={activity.id || `${day}-${idx}`} activity={activity} />
               ))}
             </Stack>
           </Box>

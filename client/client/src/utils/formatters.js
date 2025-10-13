@@ -15,11 +15,14 @@ export const formatDate = (date) => {
 };
 
 export const formatTime = (time) => {
+  if (!time) return '';
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
-  }).format(new Date(time));
+  }).format(date);
 };
 
 export const formatDateRange = (startDate, endDate) => {

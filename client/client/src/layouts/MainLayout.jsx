@@ -8,7 +8,6 @@ const DRAWER_WIDTH_COLLAPSED = 72;
 
 const MainLayout = ({ children }) => {
   const { currentTrip } = useTrip();
-  const [currentPage, setCurrentPage] = useState('itinerary');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
@@ -35,8 +34,6 @@ const MainLayout = ({ children }) => {
         >
           <TripSidebar 
             trip={currentTrip} 
-            currentPage={currentPage}
-            onNavigate={setCurrentPage}
             isExpanded={sidebarExpanded}
           />
         </Drawer>

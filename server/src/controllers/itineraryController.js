@@ -1,16 +1,29 @@
 import Trip from '../models/Trip.js';
 
 const addActivity = async (req, res) => {
-    const { title, description, location, dateTime } = req.body;
+    const { title, description, location, dateTime, day } = req.body;
     const { trip, io } = req;
     if (!title || !dateTime) return res.status(400).json({ message: 'Title and dateTime are required' });
-    const activity = { title, description, location, dateTime, createdBy: req.user._id };
+    
+    // Create activity object with all fields from request
+    const activity = { 
+        title, 
+        description, 
+        location, 
+        dateTime, 
+        day: day || 1, // Default to day 1 if not provided
+        createdBy: req.user._id 
+    };
+    
     trip.activities.push(activity);
+    
     try {
         await trip.save();
+        console.log('Activity saved successfully:', activity);
         io.to(trip._id.toString()).emit('activity_updated', trip.activities);
         res.status(201).json(trip.activities);
     } catch (error) {
+        console.error('Error saving activity:', error);
         res.status(500).json({ message: 'Server error while adding activity' });
     }
 };

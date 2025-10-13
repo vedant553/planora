@@ -6,36 +6,48 @@ import theme from './theme';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import TripWorkspacePage from './pages/TripWorkspacePage';
 import ItineraryPage from './pages/ItineraryPage';
 import ExpensesPage from './pages/ExpensesPage';
 import VotingPage from './pages/VotingPage';
 import MainLayout from './layouts/MainLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <TripProvider>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/trip/*" element={
-            <MainLayout>
-              <Routes>
-                <Route path="itinerary" element={<ItineraryPage />} />
-                <Route path="expenses" element={<ExpensesPage />} />
-                <Route path="voting" element={<VotingPage />} />
-                <Route path="overview" element={<ItineraryPage />} />
-                <Route path="documents" element={<ItineraryPage />} />
-                <Route path="settings" element={<ItineraryPage />} />
-                <Route path="*" element={<Navigate to="itinerary" replace />} />
-              </Routes>
-            </MainLayout>
-          } />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </TripProvider>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/trips/:tripId/*" 
+          element={
+            <ProtectedRoute>
+              <TripProvider>
+                <TripWorkspacePage />
+              </TripProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="itinerary" replace />} />
+          <Route path="itinerary" element={<ItineraryPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="voting" element={<VotingPage />} />
+          <Route path="overview" element={<ItineraryPage />} />
+          <Route path="documents" element={<ItineraryPage />} />
+          <Route path="settings" element={<ItineraryPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ThemeProvider>
   );
 }

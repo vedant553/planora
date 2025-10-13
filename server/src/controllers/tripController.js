@@ -21,6 +21,10 @@ const createTrip = async (req, res) => {
     dates: { start: startDate, end: endDate },
     createdBy: req.user._id,
     members: [req.user._id],
+    activities: [],
+    expenses: [],
+    settlements: [],
+    polls: []
   });
 
   try {
@@ -50,7 +54,8 @@ const getTripsForUser = async (req, res) => {
 // @access  Private
 const getTripById = async (req, res) => {
   try {
-    const trip = await Trip.findById(req.params.id).populate('members', 'name email');
+    // Populate members with name, email, and profilePicture
+    const trip = await Trip.findById(req.params.id).populate('members', 'name email profilePicture');
 
     if (!trip) {
       return res.status(404).json({ message: 'Trip not found' });

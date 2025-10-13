@@ -33,22 +33,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await authService.login(email, password);
-      setUser(data.user);
+      setUser(data);
       return data;
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
   };
 
   const signup = async (name, email, password) => {
     try {
       const data = await authService.register(name, email, password);
-      setUser(data.user);
+      setUser(data);
       return data;
     } catch (error) {
       console.error('Signup error:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Signup failed');
     }
   };
 

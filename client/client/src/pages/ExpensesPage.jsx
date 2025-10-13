@@ -1,17 +1,36 @@
-import { useState, useMemo } from 'react';
-import { Container, Typography, Button, Box, Card, CardContent, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar } from '@mui/material';
+import { useState, useMemo, useEffect } from 'react';
+import { Container, Typography, Button, Box, Card, CardContent, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar, CircularProgress } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
 import { useTrip } from '../context/TripContext';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import AddExpenseModal from '../components/AddExpenseModal';
 import SettleUpModal from '../components/SettleUpModal';
+import tripService from '../services/tripService';
 
 const ExpensesPage = () => {
-  const { expenses, expenseSummary, currentTrip, initiateSettlement, confirmSettlement } = useTrip();
+  const { currentTrip, initiateSettlement, confirmSettlement, loading } = useTrip();
   const { user } = useAuth();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettleUpModalOpen, setIsSettleUpModalOpen] = useState(false);
+  const [balances, setBalances] = useState(null);
+
+  // Fetch balances when currentTrip changes
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (currentTrip?._id) {
+        try {
+          const balancesData = await tripService.getTripBalances(currentTrip._id);
+          setBalances(balancesData);
+        } catch (error) {
+          console.error('Error fetching balances:', error);
+          setBalances(null);
+        }
+      }
+    };
+
+    fetchBalances();
+  }, [currentTrip]);
 
   // Calculate payment plan
   const paymentPlan = useMemo(() => {
@@ -20,15 +39,15 @@ const ExpensesPage = () => {
     
     // Initialize balances
     members.forEach(member => {
-      balances[member.id] = 0;
+      balances[member._id || member.id] = 0;
     });
 
     // Calculate balances from expenses
-    expenses.forEach(expense => {
-      const splitAmount = expense.amount / expense.splitBetween.length;
-      balances[expense.paidBy.id] += expense.amount;
-      expense.splitBetween.forEach(member => {
-        balances[member.id] -= splitAmount;
+    currentTrip?.expenses?.forEach(expense => {
+      // Handle backend data structure where splitDetails contains user IDs and amounts
+      balances[expense.paidBy] += expense.amount;
+      expense.splitDetails?.forEach(splitDetail => {
+        balances[splitDetail.user] -= splitDetail.owes;
       });
     });
 
@@ -40,12 +59,12 @@ const ExpensesPage = () => {
     Object.entries(balances).forEach(([memberId, balance]) => {
       if (balance < -0.01) {
         debtors.push({ 
-          member: members.find(m => m.id === memberId), 
+          member: members.find(m => (m._id || m.id) === memberId), 
           amount: Math.abs(balance) 
         });
       } else if (balance > 0.01) {
         creditors.push({ 
-          member: members.find(m => m.id === memberId), 
+          member: members.find(m => (m._id || m.id) === memberId), 
           amount: balance 
         });
       }
@@ -76,7 +95,23 @@ const ExpensesPage = () => {
     }
 
     return settlements;
-  }, [expenses, currentTrip]);
+  }, [currentTrip]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  // Calculate summary data from live data
+  const totalGroupExpenses = currentTrip?.expenses?.reduce((total, expense) => total + expense.amount, 0) || 0;
+  const userBalance = balances && user ? (balances[user._id] || 0) : 0;
+  const youAreOwed = balances ? Object.values(balances).reduce((total, balance) => total + Math.max(0, balance), 0) : 0;
 
   return (
     <Container maxWidth="lg">
@@ -106,7 +141,7 @@ const ExpensesPage = () => {
               Total Group Expenses
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              {formatCurrency(expenseSummary.totalGroupExpenses)}
+              {formatCurrency(totalGroupExpenses)}
             </Typography>
           </CardContent>
         </Card>
@@ -115,7 +150,7 @@ const ExpensesPage = () => {
           sx={{
             flex: 1,
             minWidth: 200,
-            bgcolor: expenseSummary.yourBalance >= 0 ? 'success.light' : 'error.light'
+            bgcolor: userBalance >= 0 ? 'success.light' : 'error.light'
           }}
         >
           <CardContent>
@@ -123,10 +158,10 @@ const ExpensesPage = () => {
               Your Balance
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              {formatCurrency(Math.abs(expenseSummary.yourBalance))}
+              {formatCurrency(Math.abs(userBalance))}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {expenseSummary.yourBalance >= 0 ? 'You are owed' : 'You owe'}
+              {userBalance >= 0 ? 'You are owed' : 'You owe'}
             </Typography>
           </CardContent>
         </Card>
@@ -137,7 +172,7 @@ const ExpensesPage = () => {
               You Are Owed
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              {formatCurrency(expenseSummary.youAreOwed)}
+              {formatCurrency(youAreOwed)}
             </Typography>
           </CardContent>
         </Card>
@@ -157,51 +192,65 @@ const ExpensesPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id}>
-                <TableCell>{expense.description}</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>{formatCurrency(expense.amount)}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar src={expense.paidBy.avatar} sx={{ width: 24, height: 24 }} />
-                    <Typography variant="body2">{expense.paidBy.name}</Typography>
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={-1}>
-                    {expense.splitBetween.map((member) => (
-                      <Avatar
-                        key={member.id}
-                        src={member.avatar}
-                        sx={{ width: 24, height: 24, border: '2px solid white' }}
-                      />
-                    ))}
-                  </Stack>
-                </TableCell>
-                <TableCell>{formatDate(expense.date)}</TableCell>
-                <TableCell>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      bgcolor: expense.status === 'settled' ? 'success.light' : 'warning.light',
-                      color: expense.status === 'settled' ? 'success.dark' : 'warning.dark',
-                      fontWeight: 500,
-                      textTransform: 'capitalize'
-                    }}
-                  >
-                    {expense.status}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
+            {currentTrip?.expenses?.map((expense) => {
+              // Find the member who paid
+              const paidByMember = currentTrip.members?.find(member => 
+                (member._id || member.id) === expense.paidBy
+              );
+              
+              // Find members who are part of the split
+              const splitMembers = expense.splitDetails?.map(splitDetail => 
+                currentTrip.members?.find(member => 
+                  (member._id || member.id) === splitDetail.user
+                )
+              ).filter(Boolean) || [];
+
+              return (
+                <TableRow key={expense._id || expense.id}>
+                  <TableCell>{expense.description}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{formatCurrency(expense.amount)}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Avatar src={paidByMember?.avatar} sx={{ width: 24, height: 24 }} />
+                      <Typography variant="body2">{paidByMember?.name}</Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={-1}>
+                      {splitMembers.map((member) => (
+                        <Avatar
+                          key={member._id || member.id}
+                          src={member.avatar}
+                          sx={{ width: 24, height: 24, border: '2px solid white' }}
+                        />
+                      ))}
+                    </Stack>
+                  </TableCell>
+                  <TableCell>{formatDate(expense.date)}</TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: 1,
+                        bgcolor: expense.status === 'settled' ? 'success.light' : 'warning.light',
+                        color: expense.status === 'settled' ? 'success.dark' : 'warning.dark',
+                        fontWeight: 500,
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {expense.status || 'pending'}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {expenses.length === 0 && (
+      {(!currentTrip?.expenses || currentTrip.expenses.length === 0) && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
             No expenses recorded
