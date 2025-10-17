@@ -41,8 +41,12 @@ export const TripProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // For now, just add to local state since backend doesn't have activities endpoint yet
-      const newActivity = { ...activity, id: Date.now().toString() };
+      if (!currentTrip?._id) {
+        throw new Error('No trip selected');
+      }
+
+      // Call the API service to add the activity
+      const newActivity = await tripService.addActivity(currentTrip._id, activity);
       
       // Update the currentTrip state with the new activity
       setCurrentTrip(prevTrip => ({
@@ -53,7 +57,7 @@ export const TripProvider = ({ children }) => {
       // Also update the activities state to keep them in sync
       setActivities(prevActivities => [...prevActivities, newActivity]);
       
-      return [newActivity];
+      return newActivity;
     } catch (err) {
       setError(err.message || 'Failed to add activity');
       console.error('Error adding activity:', err);
