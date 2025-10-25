@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import { disconnectSocket } from '../services/socketService';
 
 const AuthContext = createContext();
 
@@ -55,6 +56,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     authService.logout();
     setUser(null);
+    // Disconnect socket when logging out
+    disconnectSocket();
   };
 
   const value = {

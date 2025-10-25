@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // Create Socket.IO instance
-const socket = io(process.env.NODE_ENV === 'production'
+const socket = io(import.meta.env.PROD
   ? window.location.origin
   : 'http://localhost:5000', {
   autoConnect: false,

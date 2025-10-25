@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, Stack, CircularProgress, Alert } from '@mui/material';
 import AddCircleOutlinedIcon from '@mui/icons-material/AddCircleOutlined';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
 import TripCard from '../components/TripCard';
 import CreateTripModal from '../components/CreateTripModal';
 import tripService from '../services/tripService';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // State for trips data
@@ -90,14 +93,25 @@ const DashboardPage = () => {
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Your Trips
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddCircleOutlinedIcon />}
-          size="large"
-          onClick={() => setIsModalOpen(true)}
-        >
-          Create New Trip
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            startIcon={<AddCircleOutlinedIcon />}
+            size="large"
+            onClick={() => setIsModalOpen(true)}
+          >
+            Create New Trip
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<LogoutIcon />}
+            size="large"
+            onClick={logout}
+          >
+            Logout
+          </Button>
+        </Stack>
       </Box>
 
       {/* Loading State */}

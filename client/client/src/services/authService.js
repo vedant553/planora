@@ -40,10 +40,11 @@ const authService = {
     }
   },
 
-  // You would also have a logout function here, for example:
-  // logout: () => {
-  //   localStorage.removeItem('user');
-  // }
+  logout: () => {
+    localStorage.removeItem('user');
+    // Optionally, you can also clear any other stored data
+    localStorage.clear(); // This will clear all localStorage data
+  }
 };
 
 export default authService;
