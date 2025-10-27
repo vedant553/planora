@@ -42,9 +42,6 @@ function App() {
           <Route path="itinerary" element={<ItineraryPage />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="voting" element={<VotingPage />} />
-          <Route path="overview" element={<ItineraryPage />} />
-          <Route path="documents" element={<ItineraryPage />} />
-          <Route path="settings" element={<ItineraryPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

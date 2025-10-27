@@ -11,12 +11,9 @@ import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import InviteMemberModal from './InviteMemberModal';
 
 const menuItems = [
-  { id: 'overview', label: 'Overview', icon: DashboardOutlinedIcon },
   { id: 'itinerary', label: 'Itinerary', icon: DateRangeOutlinedIcon },
   { id: 'expenses', label: 'Expenses', icon: PaidOutlinedIcon },
-  { id: 'voting', label: 'Voting', icon: ThumbUpOutlinedIcon },
-  { id: 'documents', label: 'Documents', icon: FolderOpenOutlinedIcon },
-  { id: 'settings', label: 'Settings', icon: SettingsOutlinedIcon }
+  { id: 'voting', label: 'Voting', icon: ThumbUpOutlinedIcon }
 ];
 
 const TripSidebar = ({ trip, isExpanded }) => {
